@@ -1,88 +1,78 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>صالون دهب للحلاقة</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; }
-        body { color: white; background: url('background.jpg') no-repeat center center fixed; background-size: cover; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
-        .overlay { background: rgba(0, 0, 0, 0.6); padding: 20px; border-radius: 10px; text-align: center; width: 90%; max-width: 500px; border: 2px solid gold; }
-        h1, h2 { color: gold; margin-bottom: 10px; }
-        .visitor-counter { font-size: 24px; font-weight: bold; background: rgba(255, 215, 0, 0.9); color: black; padding: 10px; border-radius: 10px; display: inline-block; margin: 15px 0; }
-        .admin-controls { display: none; margin-top: 10px; }
-        .admin-controls button { font-size: 16px; padding: 8px 15px; margin: 5px; cursor: pointer; border: none; background: gold; color: black; border-radius: 5px; }
-        #admin-login { color: gold; background: none; border: none; cursor: pointer; font-size: 14px; padding: 5px; opacity: 0.7; margin-top: 10px; }
-        #admin-login:hover { opacity: 1; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>صالون دهب للحلاقة</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;700&display=swap');
+    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Cairo', sans-serif; }
+    body { color: white; background: url('background.jpg') no-repeat center center fixed; background-size: cover; min-height: 100vh; position: relative; }
+    .overlay { background: rgba(0, 0, 0, 0.6); min-height: 100vh; padding: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    .box { background: rgba(0, 0, 0, 0.7); padding: 20px; border-radius: 10px; text-align: center; border: 2px solid gold; width: 300px; }
+    h1, h2 { color: gold; margin-bottom: 10px; }
+    .visitor-counter { font-size: 24px; font-weight: bold; background: rgba(255, 215, 0, 0.9); color: black; padding: 10px; border-radius: 10px; display: inline-block; margin: 15px 0; }
+    .admin-controls { margin-top: 10px; }
+    .admin-controls button { font-size: 16px; padding: 8px 15px; cursor: pointer; border: none; background: gold; color: black; border-radius: 5px; margin: 5px; }
+  </style>
 </head>
 <body>
 
-    <div class="overlay">
-        <h1>صالون دهب للحلاقة</h1>
-        <h2>تأسس سنة 1991</h2>
-        <h3>مواعيد العمل: من 10 صباحًا حتى 10 مساءً</h3>
-        <h3 style="color: red;">مغلق أوقات الصلاة</h3>
-        <h3 style="color: red;">مغلق يوم الإثنين للراحة</h3>
-        <p class="visitor-counter">
-            عدد الزوار في الوقت الحالي: <span id="visitor-count">0</span>
-        </p>
+  <div class="overlay">
+    <div class="box">
+      <h1>صالون دهب للحلاقة</h1>
+      <h2>تأسس سنة 1991</h2>
+      <h3>مواعيد العمل: من 10 صباحًا حتى 10 مساءً</h3>
+      <h3 style="color: red;">مغلق أوقات الصلاة</h3>
+      <h3 style="color: red;">مغلق يوم الإثنين للراحة</h3>
+      <p class="visitor-counter">عدد الزوار الآن: <span id="visitor-count">0</span></p>
 
-        <div class="admin-controls" id="admin-controls">
-            <button onclick="increaseCount()">➕</button>
-            <button onclick="decreaseCount()">➖</button>
-            <button onclick="logoutAdmin()">🔒 خروج</button>
-        </div>
-
-        <button id="admin-login" onclick="adminLogin()">🔑 تسجيل دخول كمدير</button>
+      <!-- التحكم في العدد للادمن فقط -->
+      <div class="admin-controls" id="admin-controls" style="display: none;">
+        <button onclick="increaseCount()">➕</button>
+        <button onclick="decreaseCount()">➖</button>
+      </div>
     </div>
+  </div>
 
-    <script>
-        let visitorCount = localStorage.getItem("visitorCount") ? parseInt(localStorage.getItem("visitorCount")) : 0;
-        let isAdmin = false;
-        const password = "12661"; // كلمة المرور
+  <script>
+    // Firebase Configuration
+    const firebaseConfig = {
+      databaseURL: "https://dahab-1def2-default-rtdb.firebaseio.com/"
+    };
 
-        document.getElementById("visitor-count").innerText = visitorCount;
+    // Initialize Firebase
+    const app = firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const visitorRef = db.ref("visitorCount");
 
-        function updateCount() {
-            document.getElementById("visitor-count").innerText = visitorCount;
-            localStorage.setItem("visitorCount", visitorCount);
-        }
+    // تحديث العدد في كل الأجهزة في الوقت الحقيقي
+    visitorRef.on("value", (snapshot) => {
+      document.getElementById('visitor-count').innerText = snapshot.val() || 0;
+    });
 
-        function increaseCount() {
-            if (isAdmin) {
-                visitorCount++;
-                updateCount();
-            }
-        }
+    function increaseCount() {
+      visitorRef.once("value").then(snapshot => {
+        let count = snapshot.val() || 0;
+        visitorRef.set(count + 1);
+      });
+    }
 
-        function decreaseCount() {
-            if (isAdmin && visitorCount > 0) {
-                visitorCount--;
-                updateCount();
-            }
-        }
+    function decreaseCount() {
+      visitorRef.once("value").then(snapshot => {
+        let count = snapshot.val() || 0;
+        if (count > 0) visitorRef.set(count - 1);
+      });
+    }
 
-        function adminLogin() {
-            let pass = prompt("أدخل كلمة المرور:");
-            if (pass === password) {
-                isAdmin = true;
-                document.getElementById("admin-controls").style.display = "block";
-                document.getElementById("admin-login").style.display = "none";
-                alert("تم تسجيل الدخول بنجاح!");
-            } else {
-                alert("كلمة المرور غير صحيحة!");
-            }
-        }
-
-        function logoutAdmin() {
-            isAdmin = false;
-            document.getElementById("admin-controls").style.display = "none";
-            document.getElementById("admin-login").style.display = "block";
-            alert("تم تسجيل الخروج!");
-        }
-    </script>
+    // التحقق من الادمن عبر كلمة المرور
+    let password = prompt("ادخل كلمة المرور:");
+    if (password === "12661") {
+      document.getElementById('admin-controls').style.display = 'block';
+    }
+  </script>
 
 </body>
 </html>
